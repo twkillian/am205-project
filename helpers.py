@@ -1,4 +1,5 @@
 from math import *
+import shapefile
 def dist(coords, r=6371000):
 	"""
 	Calculates the surface distance in meters between two points 
@@ -17,3 +18,9 @@ def center(coords):
 	"""
 	y1, x1, y2, x2 = coords
 	return [(y1 + y2)*0.5, (x1 + x2)*0.5]
+
+def read(shp='geofiles/tabblock2010_25_pophu/tabblock2010_25_pophu'):
+	sf = shapefile.Reader(shp)
+	sr = sf.shapeRecords()
+	for i in sr:
+		yield center(i.shape.bbox), i.record[-1]
