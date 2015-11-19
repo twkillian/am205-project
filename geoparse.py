@@ -4,6 +4,6 @@ from helpers import dist, center, read
 
 if __name__ == "__main__":
 	geogen = read()
-	with open('popgrid.dat', 'w') as f:
+	with open('popgridtest.dat', 'w') as f:
 		for i in geogen:
-			f.write('{},{}\n'.format(i[0], i[1]))
+			f.write('{}, {},{}\n'.format(i[0][0], i[0][1], i[1]))
