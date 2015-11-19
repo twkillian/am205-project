@@ -8,11 +8,17 @@ from scipy.optimize import root
 # Define the transmitter's true location
 bx_t=250.; #bx_t = 0.7
 by_t=110.; #by_t = 0.37
+bz_t=0.;
 
 # Load lat lon pop of Mass. census data and convert to cartesian coords
 newarray = np.loadtxt('popgrid.txt')
+oldlen = len(newarray)
+newarray = newarray[newarray[:, 2] > 0]
+print 'nonzero points: {}'.format(1.*len(newarray)/oldlen)
 min_lat, min_lon = min(newarray[:,0]), min(newarray[:,1]) # Get min lat and lon to subtract from pts
 cart_array = 100*(newarray[0::50,0:2] - [min_lat, min_lon]) # Scaling by 100 and sampling by every 50 to spread out the data
+cart_array = np.concatenate((cart_array, 
+                             newarray[0::50,2].reshape(newarray[0::50,2].shape[0], 1)), axis=1)
 sampled_pop = newarray[0::50]
 
 # Define the beacon locations (randomly located in the unit square)
@@ -20,9 +26,10 @@ sampled_pop = newarray[0::50]
 # y_beac=[0.7491,0.5832,0.7400,0.2348,0.7350,0.9706,0.8669,0.0862,0.3664,0.3692]
 x_beac = cart_array[:,1] # Swapping order for plotting purposes
 y_beac = cart_array[:,0]
+z_beac = cart_array[:,2]
 
 # Generate the (noisy) data y, and set initial guess
-noise_level=0.05
+noise_level=0.0
 y=np.zeros(len(x_beac))
 for i in range(len(x_beac)):
     dx=bx_t-x_beac[i]
@@ -37,7 +44,7 @@ def phi(x):
         dx=x[0]-x_beac[i]
         dy=x[1]-y_beac[i]
         ss=sqrt(dx*dx+dy*dy)-y[i]
-        s+=ss*ss
+        s+=z_beac[i]*ss*ss
     return s
 
 # Gradient
@@ -48,8 +55,8 @@ def grad_phi(x):
         dx=x[0]-x_beac[i]
         dy=x[1]-y_beac[i]
         d=1/sqrt(dx*dx+dy*dy)
-        f0+=2*dx-2*y[i]*dx*d
-        f1+=2*dy-2*y[i]*dy*d
+        f0+=z_beac[i]*(2*dx-2*y[i]*dx*d)
+        f1+=z_beac[i]*(2*dy-2*y[i]*dy*d)
     return np.array([f0,f1])
 
 # Do Levenberg-Marquardt algorithm and print diagnostic information
