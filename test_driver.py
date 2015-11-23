@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import random
 
 from scipy.optimize import root
-from test_kmeans import find_centers
+from test_kmeans_w_nonlinLS import find_centers
 
 newarray = np.loadtxt('popgrid.txt')
 min_lat, min_lon = min(newarray[:,0]), min(newarray[:,1])# Get min lat and lon to subtract from pts

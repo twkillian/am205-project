@@ -85,8 +85,10 @@ def adjust_centers(ctrs, clusters):
 				dx = ctr[0]-x[i]
 				dy = ctr[1]-y[i]
 				d = 1/sqrt(dx*dx + dy*dy)
-				f0 += weighting([x[i],y[i],pop[i]])*(2*dx-2*n[i]*dx*d)
-				f1 += weighting([x[i],y[i],pop[i]])*(2*dy-2*n[i]*dx*d)
+				# f0 += weighting([x[i],y[i],pop[i]])*(2*dx-2*n[i]*dx*d)
+				# f1 += weighting([x[i],y[i],pop[i]])*(2*dy-2*n[i]*dx*d)
+				f0 += (1/pop[i])*(2*dx-2*n[i]*dx*d)
+				f1 += (1/pop[i])*(2*dy-2*n[i]*dy*d)
 			return np.array([f0,f1])
 
 		# Find the new cluster center according to non-lin LS
