@@ -50,12 +50,6 @@ def adjust_centers(ctrs, clusters):
 		y = [pts[ii][1] for ii in range(len(pts))]
 		pop = [pts[ii][2] for ii in range(len(pts))]
 
-		noise_level=0.0
-		n = np.zeros(len(x))
-		for i in range(len(x)):
-			dx = ctrs[k][0] - x[i]
-			dy = ctrs[k][1] - y[i]
-			n[i]=sqrt(dx*dx+dy*dy)+noise_level*random.random()
 
 		def weighting(pt, rad=50):
 			cur_pop = pt[2]
@@ -87,13 +81,12 @@ def adjust_centers(ctrs, clusters):
 				d = 1/sqrt(dx*dx + dy*dy)
 				# f0 += weighting([x[i],y[i],pop[i]])*(2*dx-2*n[i]*dx*d)
 				# f1 += weighting([x[i],y[i],pop[i]])*(2*dy-2*n[i]*dx*d)
-				f0 += (1/pop[i])*(2*dx-2*n[i]*dx*d)
-				f1 += (1/pop[i])*(2*dy-2*n[i]*dy*d)
+				f0 += pop[i]*(2*dx*d)
+				f1 += pop[i]*(2*dy*d)
 			return np.array([f0,f1])
 
 		# Find the new cluster center according to non-lin LS
 		new_ctrs.append(root(grad_phi, ctrs[k], jac=False, method='lm').x)
-
 	return new_ctrs
 
 # Simple convergence check

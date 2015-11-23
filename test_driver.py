@@ -27,7 +27,7 @@ plt.figure()
 for ii in range(num_clusters):
 	cur_cluster = clusters[ii]
 	for pt in cur_cluster:
-		plt.plot(pt[0],pt[1],'.',markersize=8, color=palette[ii])
+		plt.plot(pt[1],pt[0],'.',markersize=8, color=palette[ii])
 
-	plt.plot(centers[ii][0],centers[ii][1],'ro', markersize=10)
+	plt.plot(centers[ii][1],centers[ii][0],'ro', markersize=10)
 plt.show()
