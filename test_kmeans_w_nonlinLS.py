@@ -92,7 +92,7 @@ def adjust_centers(ctrs, clusters):
 			return np.array([f0,f1])
 
 		# Find the new cluster center according to non-lin LS
-		new_ctrs.append(root(grad_phi, ctrs[k], jac=False, method='lm'))
+		new_ctrs.append(root(grad_phi, ctrs[k], jac=False, method='lm').x)
 
 	return new_ctrs
 
