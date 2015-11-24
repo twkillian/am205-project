@@ -1,5 +1,7 @@
 from math import *
+import numpy as np
 import shapefile
+
 def dist(coords, r=6371000):
 	"""
 	Calculates the surface distance in meters between two points 
@@ -24,3 +26,20 @@ def read(shp='geofiles/tabblock2010_25_pophu/tabblock2010_25_pophu'):
 	sr = sf.shapeRecords()
 	for i in sr:
 		yield center(i.shape.bbox), i.record[-1]
+
+def euclidean(p, q):
+	""" Euclidean distance. """
+	return sqrt((p[0] - q[0])**2 + (p[1] - q[1])**2)
+
+def error(points, grid, pop, errfunc=euclidean, avg=False):
+	"""
+	Calculates the sum of the minimum errors given by f, weighted by sqrt(population),
+	of each gridpoint to a point in points.
+	"""
+	err = 0
+	for i in range(grid.shape[0]):
+		err += sqrt(pop[i]) * np.min([errfunc(p, grid[i, :]) for p in points])
+
+	if avg:
+		return 1. * err / grid.shape[0]
+	return err
