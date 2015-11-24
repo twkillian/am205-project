@@ -38,7 +38,38 @@ def assign_points(X,ctrs):
 
 	return clusters
 
+def weighting(pt, rad=50):
+	cur_pop = pt[2]
+	if cur_pop == 0: # effect of pt is removed if no population
+		return 0
+	
+	denom = np.sum([kp[2] for kp in pts \
+	 if np.linalg.norm(pt-kp) <= rad])
+	
+	return cur_pop / denom # pts weight is proportional to its neighborhood
 
+# Euclidean distance function, to be minimized.
+# def phi(ctr, x):
+# 	s = 0
+# 	for i in range(len(x)):
+# 		dx = ctr[0]-x[i]
+# 		dy = ctr[0]-y[i]
+# 		ss = sqrt(dx*dx + dy*dy) # Could subtract some noise here
+# 		s += pop[i] * ss*ss
+# 	return s
+
+# Gradient
+def grad_phi(ctr, x, y, pop):
+	f0, f1 = 0, 0
+	for i in range(len(x)):
+		dx = ctr[0]-x[i]
+		dy = ctr[1]-y[i]
+		d = 1/sqrt(dx*dx + dy*dy)
+		# f0 += weighting([x[i],y[i],pop[i]])*(2*dx-2*n[i]*dx*d)
+		# f1 += weighting([x[i],y[i],pop[i]])*(2*dy-2*n[i]*dx*d)
+		f0 += pop[i]*(2*dx*d)
+		f1 += pop[i]*(2*dy*d)
+	return np.array([f0,f1])
 
 # Adjust location position via non-lin LS
 def adjust_centers(ctrs, clusters):
@@ -50,43 +81,9 @@ def adjust_centers(ctrs, clusters):
 		y = [pts[ii][1] for ii in range(len(pts))]
 		pop = [pts[ii][2] for ii in range(len(pts))]
 
-
-		def weighting(pt, rad=50):
-			cur_pop = pt[2]
-			
-			if cur_pop == 0: # effect of pt is removed if no population
-				return 0
-			
-			denom = np.sum([kp[2] for kp in pts \
-			 if np.linalg.norm(pt-kp) <= rad])
-			
-			return cur_pop / denom # pts weight is proportional to its neighborhood
-
-		# Euclidean distance function, to be minimized.
-		def phi(ctr):
-			s = 0
-			for i in range(len(x)):
-				dx = ctr[0]-x[i]
-				dy = ctr[0]-y[i]
-				ss = sqrt(dx*dx + dy*dy) # Could subtract some noise here
-				s += pop[i] * ss*ss
-			return s
-
-		# Gradient
-		def grad_phi(ctr):
-			f0, f1 = 0, 0
-			for i in range(len(x)):
-				dx = ctr[0]-x[i]
-				dy = ctr[1]-y[i]
-				d = 1/sqrt(dx*dx + dy*dy)
-				# f0 += weighting([x[i],y[i],pop[i]])*(2*dx-2*n[i]*dx*d)
-				# f1 += weighting([x[i],y[i],pop[i]])*(2*dy-2*n[i]*dx*d)
-				f0 += pop[i]*(2*dx*d)
-				f1 += pop[i]*(2*dy*d)
-			return np.array([f0,f1])
-
 		# Find the new cluster center according to non-lin LS
-		new_ctrs.append(root(grad_phi, ctrs[k], jac=False, method='lm').x)
+		new_ctrs.append(root(fun=grad_phi, x0=ctrs[k], args=(x, y, pop),
+		 				jac=False, method='lm').x)
 	return new_ctrs
 
 # Simple convergence check
