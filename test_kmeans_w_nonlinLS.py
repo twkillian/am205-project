@@ -83,7 +83,7 @@ def adjust_centers(ctrs, clusters):
 
 		# Find the new cluster center according to non-lin LS
 		new_ctrs.append(root(fun=grad_phi, x0=ctrs[k], args=(x, y, pop),
-		 				jac=False, method='lm').x)
+		 					 jac=False, method='lm').x)
 	return new_ctrs
 
 # Simple convergence check
@@ -95,8 +95,8 @@ def find_centers(X, k):
 	old_ctrs = random.sample(X[:,:2],k)
 	ctrs = init_centers(k)
 	iters = 0
-	while not has_converged(ctrs,old_ctrs):
-		print "Working on iteration {}".format(iters)
+	while not has_converged(ctrs, old_ctrs):
+		# print "Working on iteration {}".format(iters)
 		iters += 1
 		old_ctrs = ctrs
 		# Assign all points in X to clusters
