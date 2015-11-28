@@ -44,10 +44,12 @@ print "Found solution with error {}! Working on plotting now...".format(min_err)
 
 palette = sns.hls_palette(num_clusters)
 plt.figure()
-for ii in range(num_clusters):
-	cur_cluster = min_clusters[ii]
+i = 0
+for key in min_clusters.keys:
+	cur_cluster = min_clusters[key]
 	for pt in cur_cluster:
-		plt.plot(pt[1], pt[0],'.',markersize=8, color=palette[ii])
+		plt.plot(pt[1], pt[0],'.',markersize=8, color=palette[i])
 
-	plt.plot(min_centers[ii][1], min_centers[ii][0],'ro', markersize=10)
+	plt.plot(min_centers[key][1], min_centers[key][0],'ro', markersize=10)
+	i += 1
 plt.show()
