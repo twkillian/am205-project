@@ -20,8 +20,8 @@ Adapted from https://datasciencelab.wordpress.com/2013/12/12/clustering-with-k-m
 # Randomly initialize the position of clustering locations
 def init_centers(k):
 	#Randomly draw x and y pts betweeen grid_bdy max and mins in each dim
-	centers = [(random.uniform(0,150), \
-		random.uniform(0,150)) for i in range(k)]
+	centers = [(random.uniform(0,400), \
+		random.uniform(0,180)) for i in range(k)]
 	return centers
 
 # Assign points to closest location
@@ -38,15 +38,15 @@ def assign_points(X,ctrs):
 
 	return clusters
 
-def weighting(pt, rad=50):
-	cur_pop = pt[2]
+def weighting(x, y, pop, idx, rad=10):
+	cur_x, cur_y, cur_pop = x[idx], y[idx], pop[idx]
 	if cur_pop == 0: # effect of pt is removed if no population
 		return 0
 	
-	denom = np.sum([kp[2] for kp in pts \
-	 if np.linalg.norm(pt-kp) <= rad])
+	denom = np.sum([pop[ii] for ii in range(len(pop)) \
+		if (np.linalg.norm(np.array([cur_x,cur_y])-np.array([x[ii],y[ii]])) <= rad and ii != idx)])
 	
-	return cur_pop / denom # pts weight is proportional to its neighborhood
+	return 1e3*(cur_pop / denom) # pts weight is proportional to its neighborhood (scaled by 1e3 for greater effect)
 
 # Euclidean distance function, to be minimized.
 # def phi(ctr, x):
@@ -65,8 +65,8 @@ def grad_phi(ctr, x, y, pop):
 		dx = ctr[0]-x[i]
 		dy = ctr[1]-y[i]
 		d = 1/sqrt(dx*dx + dy*dy)
-		# f0 += weighting([x[i],y[i],pop[i]])*(2*dx-2*n[i]*dx*d)
-		# f1 += weighting([x[i],y[i],pop[i]])*(2*dy-2*n[i]*dx*d)
+		# f0 += weighting(x,y,pop,i)*(2*dx*d)
+		# f1 += weighting(x,y,pop,i)*(2*dy*d)
 		f0 += pop[i]*(2*dx*d)
 		f1 += pop[i]*(2*dy*d)
 	return np.array([f0,f1])
