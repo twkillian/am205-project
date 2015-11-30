@@ -38,15 +38,15 @@ def assign_points(X,ctrs):
 
 	return clusters
 
-def weighting(x, y, pop, idx, rad=10):
-	cur_x, cur_y, cur_pop = x[idx], y[idx], pop[idx]
-	if cur_pop == 0: # effect of pt is removed if no population
-		return 0
+# def weighting(x, y, pop, idx, rad=10):
+# 	cur_x, cur_y, cur_pop = x[idx], y[idx], pop[idx]
+# 	if cur_pop == 0: # effect of pt is removed if no population
+# 		return 0
 	
-	denom = np.sum([pop[ii] for ii in range(len(pop)) \
-		if (np.linalg.norm(np.array([cur_x,cur_y])-np.array([x[ii],y[ii]])) <= rad and ii != idx)])
+# 	denom = np.sum([pop[ii] for ii in range(len(pop)) \
+# 		if (np.linalg.norm(np.array([cur_x,cur_y])-np.array([x[ii],y[ii]])) <= rad and ii != idx)])
 	
-	return 1e3*(cur_pop / denom) # pts weight is proportional to its neighborhood (scaled by 1e3 for greater effect)
+# 	return 1e3*(cur_pop / denom) # pts weight is proportional to its neighborhood (scaled by 1e3 for greater effect)
 
 # Euclidean distance function, to be minimized.
 # def phi(ctr, x):
@@ -59,20 +59,27 @@ def weighting(x, y, pop, idx, rad=10):
 # 	return s
 
 # Gradient
-def grad_phi(ctr, x, y, pop):
+def grad_phi(ctr, x, y, pop, wt=1, max_pop=1):
+	
+	def weight(cur_pop, wt=1, max_pop=1):
+		if wt == 1:       return cur_pop
+		elif wt == 2:     return cur_pop*cur_pop
+		elif wt == 'log': return np.log(cur_pop)
+		elif wt == 'max': return float(cur_pop)/max_pop
+		else:             return cur_pop
+
+
 	f0, f1 = 0, 0
 	for i in range(len(x)):
 		dx = ctr[0]-x[i]
 		dy = ctr[1]-y[i]
 		d = 1/sqrt(dx*dx + dy*dy)
-		# f0 += weighting(x,y,pop,i)*(2*dx*d)
-		# f1 += weighting(x,y,pop,i)*(2*dy*d)
-		f0 += pop[i]*(2*dx*d)
-		f1 += pop[i]*(2*dy*d)
+		f0 += weight(pop[i],wt,max_pop)*(2*dx*d)
+		f1 += weight(pop[i],wt,max_pop)*(2*dy*d)
 	return np.array([f0,f1])
 
 # Adjust location position via non-lin LS
-def adjust_centers(ctrs, clusters):
+def adjust_centers(ctrs, clusters, wt=1):
 	new_ctrs = []
 	keys = sorted(clusters.keys())
 	for k in keys:
@@ -81,8 +88,10 @@ def adjust_centers(ctrs, clusters):
 		y = [pts[ii][1] for ii in range(len(pts))]
 		pop = [pts[ii][2] for ii in range(len(pts))]
 
+		max_pop = max(pop)
+
 		# Find the new cluster center according to non-lin LS
-		new_ctrs.append(root(fun=grad_phi, x0=ctrs[k], args=(x, y, pop),
+		new_ctrs.append(root(fun=grad_phi, x0=ctrs[k], args=(x, y, pop, wt, max_pop),
 		 					 jac=False, method='lm').x)
 	return new_ctrs
 
@@ -91,7 +100,7 @@ def has_converged(ctrs, old_ctrs):
 	return (set([tuple(a) for a in ctrs]) == set([tuple(a) for a in old_ctrs]))
 
 # Cluster points as 
-def find_centers(X, k):
+def find_centers(X, k, wt=1):
 	old_ctrs = random.sample(X[:,:2],k)
 	ctrs = init_centers(k)
 	iters = 0
@@ -100,9 +109,9 @@ def find_centers(X, k):
 		iters += 1
 		old_ctrs = ctrs
 		# Assign all points in X to clusters
-		clusters = assign_points(X,ctrs)
+		clusters = assign_points(X, ctrs)
 		# Adjust locations of locations
-		ctrs = adjust_centers(ctrs,clusters)
+		ctrs = adjust_centers(ctrs, clusters, wt)
 	return (ctrs, clusters)
 
 

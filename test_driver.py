@@ -31,7 +31,7 @@ while (min_err > tol) and (num_clusters < max_clusters):
 
 	# Try tries_per_iter starting points and pick the best result 
 	for i in range(tries_per_iter):
-		centers, clusters = find_centers(cart_array, num_clusters)
+		centers, clusters = find_centers(cart_array, num_clusters, wt='log')
 		err = error(centers, cart_array, pop, avg=True)
 		if min_err > err:
 			min_err = err
