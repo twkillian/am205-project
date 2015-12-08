@@ -2,6 +2,8 @@
 \usepackage{amsmath, graphicx, amsfonts, caption, subfig, keyval, algorithm, algorithmic}
 \captionsetup{justification=centering}
 \newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathcal{C}}
+\DeclareMathOperator*{\argmin}{\arg\!\min}
 
 \begin{document}
 \title{Weighted $k$-Centers \& Lloyd's Algorithm}
@@ -41,7 +43,9 @@ Compass search is a simple method of minimizing a function $f \in \R^n$ that doe
 \end{algorithmic}
 \end{algorithm}
 
-We minimize $$\sqrt{\sum_i w(\alpha_i) d(p, q_i)^2}$$ where $p$ is the location of the point of service, $\alpha_i$ and $q_i$ are the population at and location of point $i$, $w$ is a function that weights the population, $d$ is a distance function, and the sum is over all points for which we have population data (in practice, because there are around 160,000 census blocks in Massachusetts, we subsample the population data to achieve better performance). Figure \ref{fig:popscale} shows distribution center placement for various $w$, with $d(p-q_i) = ||p - q_i||_2$. As expected, the distribution center is consistently placed near Boston. Under $w(x) = \sqrt{x}$, the center moves farther away from Boston as the influence of high population to the objective function is decreased, and under $w(x) = x^2$, the center moves closer to Boston. However, the choice of weighting function appears to have little effect on placement of the center. Even when population is not taken into account, the center remains fairly close to Boston by virtue of the large number of census blocks located there.
+We minimize
+$$\sum_i w(\alpha_i) d(p, q_i)$$
+where $p$ is the location of the point of service, $\alpha_i$ and $q_i$ are the population at and location of point $i$, $w$ is a function that weights the population, $d$ is a distance function, and the sum is over all points for which we have population data (in practice, because there are around 160,000 census blocks in Massachusetts, we subsample the population data to achieve better performance). Figure \ref{fig:popscale} shows distribution center placement for various $w$, with $d(p-q_i) = ||p - q_i||_2$. As expected, the distribution center is consistently placed near Boston. Under $w(x) = \sqrt{x}$, the center moves farther away from Boston as the influence of high population to the objective function is decreased, and under $w(x) = x^2$, the center moves closer to Boston. However, the choice of weighting function appears to have little effect on placement of the center. Even when population is not taken into account, the center remains fairly close to Boston by virtue of the large number of census blocks located there.
 
 \begin{figure}[!ht]%
   \centering
@@ -56,11 +60,15 @@ We minimize $$\sqrt{\sum_i w(\alpha_i) d(p, q_i)^2}$$ where $p$ is the location 
   \label{fig:popscale}
 \end{figure}
 
-This method works well for one distribution center, but the number of directions to search grows quickly with the number of points.  Consider the case of two points $p_1, ..., p_n \in \R^2$. Our function to minimize is now $$\sqrt{\sum_i f(\alpha_i)\min(g(p_1, q_i), ..., g(p_n, q_i))}$$ which corresponds to minimizing each person's distance from the nearest point of service. A positive spanning set for $\R^n$ must contain at least $n+1$ vectors \cite{charles}, so we must consider up to three possible directions at each step for each $p_i$. Determining the exact number of directions that must be searched for $n$ points in order to guarantee convergence to some maximum is beyond the scope of this paper. 
+This method works well for one distribution center, but the number of directions to search grows quickly with the number of centers.  Consider the case of points $c_1, ..., c_n \in \R^2$. Our function to minimize is now $$\sum_i w(\alpha_i)\min\Big(d(c_1, p_i), ..., d(c_n, p_i)\Big)$$ which corresponds to minimizing each person's distance from the nearest point of service. A positive spanning set for $\R^n$ must contain at least $n+1$ vectors \cite{charles}, so we must consider up to three possible directions at each step for each $p_i$. Determining the exact number of directions that must be searched for $n$ points in order to guarantee convergence to some maximum is beyond the scope of this paper. 
 
 \section{Multiple Distribution Centers} \label{multicenters}
-Lloyd's algorithm provides a more scaleable solution for multiple distribution centers. This algorithm was originally applied to problems in information theory \cite{lloyd}, but has been adapted to other problems, such as clustering. A detailed description is given in Algorithm \ref{alg:lloyd} (see \cite{kmeans} for further details).The general algorithm works by assigning, via some method, starting locations for the centers, then iteratively moving the centers to the centers of their respective Voronoi cells. However, weighting points by population weights eliminates the metric structure of the space, since a point far from a center with high population, in terms of Euclidean distance, can be ``closer" than a nearby point with small population. Therefore, in the center adjusting step, we find the new centers by solving the nonlinear least squares problem
-$$wordswordswords$$
+Lloyd's algorithm provides a more scaleable solution for multiple distribution centers. This algorithm was originally applied to problems in information theory \cite{lloyd}, but has been adapted to other problems, such as clustering. A detailed description is given in Algorithm \ref{alg:lloyd} (see \cite{kmeans} for further details).The general algorithm works as follows: first, assign, via some method, starting locations for the centers. Then, assign each center a cluster composed of points closer to it than to another center. Next, iteratively move the centers to the centers of their respective Voronoi cells. Repeat until the centers do not move between iterations. However, weighting points by population weights eliminates the metric structure of the space, since a point far from a center with high population, in terms of Euclidean distance, can be ``closer" than a nearby point with small population. Therefore, in the center adjusting step, we find the new location for a center $c$ in cluster $\C$ by solving the optimization problem
+$$\argmin_{c} \sum_{i \in \C} w(\alpha) d(p_i, c)$$
+This is equivalent to finding a root of the gradient.
+
+A cluster is $\{p \in X : d(p, c_j) < d(p, c_k) \ \forall k \neq j\}$.
+
 We randomly assign starting centers, though other initialization methods may be used.
 
 \begin{algorithm}
