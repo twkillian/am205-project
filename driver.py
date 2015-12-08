@@ -26,6 +26,7 @@ tol = 200 # for average distance, this should not be above 400; otherwise, >1e6 
 num_clusters = 0
 max_clusters = 7
 tries_per_iter = 1
+max_pop = float(max(pop)) # Largest population at a single point in the grid
 thres = 10 # Thresholding for minimum population size that we adjust our centers for.
 min_centers = None
 min_clusters = None
@@ -54,7 +55,7 @@ i = 0
 for key in clusters.keys():
 	cur_cluster = clusters[key]
 	for pt in cur_cluster:
-		plt.plot(pt[0], pt[1],'.',markersize=8, color=palette[i])
+		plt.plot(pt[0], pt[1],'.',markersize=8, color=palette[i], alpha=pt[2]/max_pop)
 
 	plt.plot(centers[key][0], centers[key][1],'ro', markersize=10)
 	i += 1
