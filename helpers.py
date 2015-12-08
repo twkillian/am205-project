@@ -31,14 +31,24 @@ def euclidean(p, q):
 	""" Euclidean distance. """
 	return sqrt((p[0] - q[0])**2 + (p[1] - q[1])**2)
 
-def error(points, grid, pop, errfunc=euclidean, avg=False):
+def weight(cur_pop, wt=1, max_pop=1): # User supplied weighting function of each 
+	if wt == 1:       
+		if cur_pop < threshold:
+			return 0
+		else: return cur_pop
+	elif wt == 2:     return cur_pop*cur_pop
+	elif wt == 'log': return np.log(cur_pop)
+	elif wt == 'max': return float(cur_pop)/max_pop
+	else:             return cur_pop
+
+def error(points, grid, pop, errfunc=euclidean, avg=False, wt=1):
 	"""
 	Calculates the sum of the minimum errors given by f, weighted by sqrt(population),
 	of each gridpoint to a point in points.
 	"""
 	err = 0
 	for i in range(grid.shape[0]):
-		err += sqrt(pop[i]) * np.min([errfunc(p, grid[i, :]) for p in points])
+		err += weight(pop[i], wt) * np.min([errfunc(p, grid[i, :]) for p in points])
 
 	if avg:
 		return 1. * err / grid.shape[0]
