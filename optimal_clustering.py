@@ -39,17 +39,18 @@ def assign_points(X,ctrs):
 	return clusters
 
 # Gradient
-def grad_phi(ctr, x, y, pop, wt=1, max_pop=1, threshold=1):
+def grad_phi(ctr, x, y, pop, wt='lin', max_pop=1, threshold=1):
 	
-	def weight(cur_pop, wt=1, max_pop=1): # User supplied weighting function of each 
-		if wt == 1:       
-			if cur_pop < threshold:
-				return 0
-			else: return cur_pop
-		elif wt == 2:     return cur_pop*cur_pop
-		elif wt == 'log': return np.log(cur_pop)
-		elif wt == 'max': return float(cur_pop)/max_pop
-		else:             return cur_pop
+	def weight(cur_pop, wt='lin', max_pop=1): # User supplied weighting function of each 
+		if wt == 'lin':       
+			if cur_pop <= threshold:
+				           return 0
+			else:          return cur_pop
+		elif wt == 'sq':   return cur_pop*cur_pop
+		elif wt == 'sqrt': return sqrt(cur_pop)
+		elif wt == 'log':  return np.log(cur_pop)
+		elif wt == 'max':  return float(cur_pop)/max_pop
+		else:              return cur_pop
 
 
 	f0, f1 = 0, 0
@@ -62,7 +63,7 @@ def grad_phi(ctr, x, y, pop, wt=1, max_pop=1, threshold=1):
 	return np.array([f0,f1])
 
 # Adjust location position via non-lin LS
-def adjust_centers(ctrs, clusters, wt=1, threshold=1):
+def adjust_centers(ctrs, clusters, wt='lin', threshold=1):
 	new_ctrs = []
 	keys = sorted(clusters.keys())
 	for k in keys:
@@ -83,7 +84,7 @@ def has_converged(ctrs, old_ctrs):
 	return (set([tuple(a) for a in ctrs]) == set([tuple(a) for a in old_ctrs]))
 
 # Cluster points as 
-def find_centers(X, k, wt=1, threshold=1):
+def find_centers(X, k, wt='lin', threshold=1):
 	old_ctrs = random.sample(X[:,:2],k)
 	ctrs = init_centers(k)
 	iters = 0

@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import random
 
 from scipy.optimize import root
-from test_kmeans_w_nonlinLS import find_centers
+from sklearn.cross_validation import train_test_split
+from optimal_clustering import find_centers
 from helpers import error
 
 
@@ -22,41 +23,73 @@ temp, temp2 = np.copy(cart_array[:,0]), np.copy(cart_array[:,1])
 cart_array[:,0] = temp2
 cart_array[:,1] = temp
 
-tol = 200 # for average distance, this should not be above 400; otherwise, >1e6 is ok
-num_clusters = 0
-max_clusters = 7
-tries_per_iter = 1
-max_pop = float(max(pop)) # Largest population at a single point in the grid
-thres = 10 # Thresholding for minimum population size that we adjust our centers for.
-min_centers = None
-min_clusters = None
-min_err = np.inf
+#Split data for validation purposes across different weighting functions
+test_array, validation_array = train_test_split(cart_array, test_size = 0.15)
+test_pop = test_array[:,2]
+validation_pop = validation_array[:,2]
 
-while (min_err > tol) and (num_clusters < max_clusters):
-	num_clusters += 1
+# Initialization and setup
+tol = 250                 # maximum acceptable average distance from consumer to distributor, this should not be above 400; otherwise, >1e6 is ok
+max_clusters = 7
+tries_per_iter = 3        # Stochastically vary intialization points to avoid being stuck in local minima
+max_pop = float(max(pop)) # Largest population at a single point in the grid
+thres = 1                # Thresholding for minimum population size that we adjust our centers for.
+
+for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
+
+	print "Using {} weighting".format(i_weight)
+
+	# Per separate weighting problem initialization
+	num_clusters = 0
+	min_centers = None
+	min_clusters = None
 	min_err = np.inf
 
-	# Try tries_per_iter starting points and pick the best result 
-	for i in range(tries_per_iter):
-		centers, clusters = find_centers(cart_array, num_clusters, wt=1, threshold=thres)
-		err = error(centers, cart_array, pop, avg=True)
-		if min_err > err:
-			min_err = err
-			min_centers = centers
-			min_clusters = clusters
+	# Iteratively add new distribution centers and find their optimal location 
+	# until population is provided sufficient access to distribution centers
+	while (min_err > tol) and (num_clusters < max_clusters):
+		num_clusters += 1
+		min_err = np.inf
 
-	print num_clusters, min_err
+		# Perform clustering tries_per_iter times choosing random starting points 
+		# at each iteration, save the best result 
+		for i in range(tries_per_iter):
 
-print "Found solution with error {}! Working on plotting now...".format(min_err)
+			# Find optimal placement for number of distribution centers specified.
+			centers, clusters = find_centers(test_array, num_clusters, wt=i_weight, threshold=thres)
+			# Measure average consumer distance from distribution center
+			err = error(centers, test_array[:,:2], test_pop, avg=True, wt=i_weight, max_pop=max_pop, threshold=thres)
 
-palette = sns.hls_palette(num_clusters)
-plt.figure()
-i = 0
-for key in clusters.keys():
-	cur_cluster = clusters[key]
-	for pt in cur_cluster:
-		plt.plot(pt[0], pt[1],'.',markersize=8, color=palette[i], alpha=pt[2]/max_pop)
+			if min_err > err: # Check whether current sol'n has improved the previous sol'n
+				min_err = err
+				min_centers = centers
+				min_clusters = clusters
 
-	plt.plot(centers[key][0], centers[key][1],'ro', markersize=10)
-	i += 1
-plt.show()
+		print num_clusters, min_err # Algorithm progress notification
+
+	print "Found solution! With weighting function {0}, there are {1} clusters with error {2}. Plotting result now...".format(i_weight, num_clusters, min_err)
+
+	validation_error = error(centers, validation_array[:,:2], validation_pop, avg=True, wt=i_weight, max_pop=max_pop, threshold=thres)
+
+	# Plotting
+	palette = sns.hls_palette(num_clusters)
+	plt.figure()
+	i = 0
+	for key in clusters.keys():
+		cur_cluster = clusters[key]
+		for pt in cur_cluster:
+			plt.plot(pt[0], pt[1],'.',markersize=8, color=palette[i], alpha=pt[2]/max_pop)
+
+		plt.plot(centers[key][0], centers[key][1],'ko', markersize=10)
+
+		i += 1
+	plt.grid(b=False)
+	plt.xticks([])
+	plt.yticks([])
+	plt.axes(bgcolor='white',frameon=False)
+	plt.annotate('Cost: %0.5f' % validation_error, xy=(15,20), xytext=(15,20), fontsize=30)
+	plt.savefig('images/solution_clusters{0}_minpop{1}_{2}wt.png'.format(num_clusters,thres,i_weight))
+	# plt.show()
+
+
+
