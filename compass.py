@@ -7,7 +7,7 @@ def f(p, grid):
 	err = 0
 	x, y = p
 	for i in range(grid.shape[0]):
-		err += grid[i, 2] * ((x - grid[i, 0])**2 + (y - grid[i, 1])**2)
+		err += log(grid[i, 2]) * ((x - grid[i, 0])**2 + (y - grid[i, 1])**2)
 	return sqrt(err)
 
 def move(dir, step):
@@ -24,10 +24,9 @@ def move(dir, step):
 newarray = np.loadtxt('popgrid.txt')
 newarray = newarray[newarray[:, 2] > 0]
 min_lat, min_lon = min(newarray[:,0]), min(newarray[:,1]) # Get min lat and lon to subtract from pts
-cart_array = 100*(newarray[0::50,0:2] - [min_lat, min_lon]) # Scaling by 100 and sampling by every 50 to spread out the data
-cart_array = np.concatenate((cart_array, newarray[0::50,2]
-	                  		 .reshape(newarray[0::50,2].shape[0], 1)), axis=1)
-sampled = cart_array[0::50, :]
+cart_array = 100*(newarray[0::5,0:2] - [min_lat, min_lon]) # Scaling by 100 and sampling by every 50 to spread out the data
+cart_array = np.concatenate((cart_array, newarray[0::5,2]
+	                  		 .reshape(newarray[0::5,2].shape[0], 1)), axis=1)
 cart_array[:, [1, 0]] = cart_array[:, [0, 1]] # swap first two columns
 
 p = np.array([150., 135.]) # initial guess
@@ -57,8 +56,10 @@ while True:
 
 print p, count, step
 
-plt.scatter(cart_array[:, 0], cart_array[:, 1], alpha=0.3)
-plt.xlim(0,300)
-plt.ylim(0,200)
-plt.scatter(p[0], p[1], color='r')
+fig = plt.figure(figsize=(10, 8))
+plt.scatter(cart_array[:, 0], cart_array[:, 1], alpha=0.3, s=25)
+plt.xlim(-10, 370)
+plt.ylim(-10, 200)
+plt.scatter(p[0], p[1], color='r', s=300)
+plt.axis('off')
 plt.show()
