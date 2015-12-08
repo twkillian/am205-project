@@ -39,17 +39,17 @@ def weight(cur_pop, wt='lin', max_pop=1, threshold=1): # User supplied weighting
 	elif wt == 'sq':     return cur_pop*cur_pop
 	elif wt == 'sqrt': return np.sqrt(cur_pop)
 	elif wt == 'log': return np.log(cur_pop)
-	elif wt == 'max': return float(cur_pop)/max_pop
+	elif wt == 'max': return cur_pop
 	else:             return cur_pop
 
-def error(points, grid, pop, errfunc=euclidean, avg=False, wt='lin', max_pop=1, threshold=1):
+def error(points, grid, pop, errfunc=euclidean, avg=False, wt='lin', scale=1, max_pop=1, threshold=1):
 	"""
 	Calculates the sum of the minimum errors given by f, weighted by sqrt(population),
 	of each gridpoint to a point in points.
 	"""
 	err = 0
 	for i in range(grid.shape[0]):
-		err += weight(pop[i], wt, max_pop, threshold) * np.min([errfunc(p, grid[i, :]) for p in points])
+		err += float(weight(pop[i], wt, max_pop, threshold))/scale * np.min([errfunc(p, grid[i, :]) for p in points])
 
 	if avg:
 		return 1. * err / grid.shape[0]

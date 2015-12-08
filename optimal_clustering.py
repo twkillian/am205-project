@@ -39,7 +39,7 @@ def assign_points(X,ctrs):
 	return clusters
 
 # Gradient
-def grad_phi(ctr, x, y, pop, wt='lin', max_pop=1, threshold=1):
+def grad_phi(ctr, x, y, pop, wt='lin', scale=1, max_pop=1, threshold=1):
 	
 	def weight(cur_pop, wt='lin', max_pop=1): # User supplied weighting function of each 
 		if wt == 'lin':       
@@ -49,7 +49,7 @@ def grad_phi(ctr, x, y, pop, wt='lin', max_pop=1, threshold=1):
 		elif wt == 'sq':   return cur_pop*cur_pop
 		elif wt == 'sqrt': return sqrt(cur_pop)
 		elif wt == 'log':  return np.log(cur_pop)
-		elif wt == 'max':  return float(cur_pop)/max_pop
+		elif wt == 'max':  return cur_pop
 		else:              return cur_pop
 
 
@@ -58,12 +58,12 @@ def grad_phi(ctr, x, y, pop, wt='lin', max_pop=1, threshold=1):
 		dx = ctr[0]-x[i]
 		dy = ctr[1]-y[i]
 		d = 1/sqrt(dx*dx + dy*dy)
-		f0 += weight(pop[i],wt,max_pop)*(2*dx*d)
-		f1 += weight(pop[i],wt,max_pop)*(2*dy*d)
+		f0 += float(weight(pop[i],wt,max_pop))/scale*(2*dx*d)
+		f1 += float(weight(pop[i],wt,max_pop))/scale*(2*dy*d)
 	return np.array([f0,f1])
 
 # Adjust location position via non-lin LS
-def adjust_centers(ctrs, clusters, wt='lin', threshold=1):
+def adjust_centers(ctrs, clusters, wt='lin', scale=1, threshold=1):
 	new_ctrs = []
 	keys = sorted(clusters.keys())
 	for k in keys:
@@ -75,7 +75,7 @@ def adjust_centers(ctrs, clusters, wt='lin', threshold=1):
 		max_pop = max(pop)
 
 		# Find the new cluster center according to non-lin LS
-		new_ctrs.append(root(fun=grad_phi, x0=ctrs[k], args=(x, y, pop, wt, max_pop, threshold),
+		new_ctrs.append(root(fun=grad_phi, x0=ctrs[k], args=(x, y, pop, wt, scale, max_pop, threshold),
 		 					 jac=False, method='lm').x)
 	return new_ctrs
 
@@ -84,7 +84,7 @@ def has_converged(ctrs, old_ctrs):
 	return (set([tuple(a) for a in ctrs]) == set([tuple(a) for a in old_ctrs]))
 
 # Cluster points as 
-def find_centers(X, k, wt='lin', threshold=1):
+def find_centers(X, k, wt='lin', scale=1, threshold=1):
 	old_ctrs = random.sample(X[:,:2],k)
 	ctrs = init_centers(k)
 	iters = 0
@@ -95,7 +95,7 @@ def find_centers(X, k, wt='lin', threshold=1):
 		# Assign all points in X to clusters
 		clusters = assign_points(X, ctrs)
 		# Adjust locations of locations
-		ctrs = adjust_centers(ctrs, clusters, wt, threshold)
+		ctrs = adjust_centers(ctrs, clusters, wt, scale, threshold)
 	return (ctrs, clusters)
 
 
