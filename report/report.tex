@@ -41,6 +41,8 @@ A superlinear $w$ could be used in a situation in which it is not as useful to p
 
 Unless otherwise specified, $d$ is the standard Euclidean distance. Of course, this distance metric does not capture the true surface distance between points on the Earth. Since we test our algorithm on geographic data, we should, strictly speaking, use a different distance function such as the haversine formula; however, Euclidean distance provides a good approximation on small regions such as the state of Massachusetts. This region is small enough that the curvature of the Earth is effectively negligible when calculating the distance between two points.
 
+% discuss thresholding
+
 %\subsection{Related Work}
 
 \subsection{Census Data}
@@ -133,10 +135,6 @@ As in the case of one distribution center, we test our algorithm on U.S. census 
 
 We hoped to be able to compare the different clusterings produced by each weighting function. We were unable to determine any feasible way of doing this across separate clusterings without assuming there to be a unique underlying truth set that we anticipate our algorithm will find, an assumption we were unwilling to make. We hesitate in making such an assumption due to the stochastic nature with which we initialized our clustering and by applying some conservatism in our optimization approach. Each time a clustering is finalized, there is no guarantee that the points in a single cluster will remain in that same cluster after the next iteration. This is particularly true when comparing the final product of two clusterings produced by different weighting functions, when the structure of the clustering and the centers themselves are significantly different. The solution we used to avoid incongruous comparisons from cluster to cluster was to randomly partition our dataset into a test and validation set, with an 85/15 splitting. The concept with having a dedicated validation set would be that the clusters will have been defined and optimized based on the test set. The validation set could be then used to serve as a means to check whether our newly determined clustering also minimizes the distance of an independent set of points in the space to the cluster centers. We hoped that having a uniform set of points, for all clusterings, would sufficiently serve to provide a common measure of the performance any particular clustering has in minimizing the distances from the validation set to the cluster centers.
 
-\subsection{Linear Weighting}
-We first show the behavior of the algorithm for linear weighting. The cost function and tolerance are not rescaled because there are no comparisons between different weighting functions. Figure [ref] contains a 
-
-
 \subsection{Rescaling}
 Without rescaling, it is difficult to compare results with different choices of $w$. For example, the weighted mean distance with $w(\xi) = \xi^2$ will necessarily be much greater than the weighted mean distance with $w(\xi) = \sqrt{\xi}$. Therefore, we divide both the tolerance and the cost function by
 
@@ -144,24 +142,89 @@ $$\sum_i w(\xi_i)$$
 
 This roughly corresponds to a rescaling to the same scale of the case when $w(\xi) = \xi$. Rescaling the tolerance is equivalent to choosing a smaller tolerance to start with. However, rescaling is a systematic way of converting a tolerance with a physical interpretation to one suited to the problem. 
 
-\subsection{Minimum Distribution Centers}
-Figure \ref{fig:centers} shows the results of generating 10 clusters under five different weighting functions. 
+\subsection{Effect of Number of Centers on Cost}
+Figure \ref{fig:10centers} shows the cluster arrangements for unscaled linear weighting for $k=1,...,10$ clusters. Also shown in figure \ref{fig:centersvscost} is the validation cost as a function of number of clusters.
+
+\begin{figure}[!ht]%
+  \centering
+  \subfloat[$k=1$]{{\includegraphics[width=5.5cm]{images/linwt_comparison1.png} }}%
+  \qquad
+  \subfloat[$k=2$]{{\includegraphics[width=5.5cm]{images/linwt_comparison2.png} }}%
+  \qquad
+  \subfloat[$k=3$]{{\includegraphics[width=5.5cm]{images/linwt_comparison3.png} }}%
+  \qquad
+  \subfloat[$k=4$]{{\includegraphics[width=5.5cm]{images/linwt_comparison4.png} }}%
+  \qquad
+  \subfloat[$k=5$]{{\includegraphics[width=5.5cm]{images/linwt_comparison5.png} }}%
+  \caption{Distribution center placement and validation cost under linear weighting for $k=1,...,5$. The value of the cost function is displayed, and centers are shown in black.}
+  \label{fig:10centers}
+\end{figure}
+
+\begin{figure}[!ht]%
+  \ContinuedFloat
+  \centering
+  \subfloat[$k=6$]{{\includegraphics[width=5.5cm]{images/linwt_comparison6.png} }}%
+  \qquad
+  \subfloat[$k=7$]{{\includegraphics[width=5.5cm]{images/linwt_comparison7.png} }}%
+  \qquad
+  \subfloat[$k=8$]{{\includegraphics[width=5.5cm]{images/linwt_comparison8.png} }}%
+  \qquad
+  \subfloat[$k=9$]{{\includegraphics[width=5.5cm]{images/linwt_comparison9.png} }}%
+  \qquad
+  \subfloat[$k=10$]{{\includegraphics[width=5.5cm]{images/linwt_comparison10.png} }}%
+  \caption{Distribution center placement and validation cost under linear weighting for $k=6,...,10$. The value of the cost function is displayed, and centers are shown in black.}
+  \label{fig:10centers}
+\end{figure}
+
+\begin{figure}[!ht]%
+  \centering
+   \subfloat{{\includegraphics[width=5.5cm]{images/validationcost.png} }}%
+   \caption{Validation cost vs. number of clusters}
+   \label{fig:centersvscost}
+ \end{figure}
+ 
+As expected, centers are consistently located near urban areas. Also as expected, cost decreases, albeit erratically, with the number of centers. The five center arrangement, for example, results in higher cost than the four center arrangement, but this is due to the random initialization of starting centers. Had time permitted, averaging multiple runs would have produced a smoother curve and fewer unexpected results. Nonetheless, the results are reasonable and consistent with expectations.
+
+\subsection{Effect of Population Thresholding on Cost}
+Figure \ref{fig:threshold} shows the effects of population thresholding on center placement for various population thresholds. Recall that a population threshold of $n$ means that points with population less than $n$ are treated as having a population of zero. All thresholds were tested with five centers.
+
+\begin{figure}[!ht]%
+  \centering
+  \subfloat[Threshold of 10]{{\includegraphics[width=5.5cm]{images/solution_linwt_clusters5_minpop10.png} }}%
+  \qquad
+  \subfloat[Threshold of 25]{{\includegraphics[width=5.5cm]{images/solution_linwt_clusters5_minpop25.png} }}%
+  \qquad
+  \subfloat[Threshold of 50]{{\includegraphics[width=5.5cm]{images/solution_linwt_clusters5_minpop50.png} }}%
+  \qquad
+  \subfloat[Threshold of 75]{{\includegraphics[width=5.5cm]{images/solution_linwt_clusters5_minpop75.png} }}%
+  \qquad
+  \subfloat[Threshold of 100]{{\includegraphics[width=5.5cm]{images/solution_linwt_clusters5_minpop100.png} }}%
+  \caption{Distribution center placement  under linear weighting for various population thresholds. The value of the cost function is displayed, and centers are shown in black.}
+  \label{fig:threshold}
+\end{figure}
+
+The results are not surprising. Increasing the threshold does not have a significant effect on placement of centers on a micro level. For instance, the centers near Boston and Springfield are always in roughly the same places. A sufficiently high threshold does serve to all but ignore less populated areas. At a population threshold of 100, the Boston center serves the entirety of southeastern Massachusetts and the cape.
+
+\subsection{Comparison of Weighting Functions}
+Figure \ref{fig:weightcomp} shows the results of generating 10 clusters under four different weighting functions.
+
 \begin{figure}[!ht]%
   \centering
   \subfloat[$w(\xi)=\xi$]{{\includegraphics[width=5.5cm]{images/solution_linwt_clusters10_minpop1.png} }}%
   \qquad
-  \subfloat[$w(\xi)=\sqrt{\xi}$]{{\includegraphics[width=5.5cm]{images/solution_sqrtwt_clusters3_minpop1.png} }}%
+  \subfloat[$w(\xi)=\sqrt{\xi}$]{{\includegraphics[width=5.5cm]{images/solution_sqrtwt_clusters10_minpop1.png} }}%
   \qquad
   \subfloat[$w(\xi)=\xi^2$]{{\includegraphics[width=5.5cm]{images/solution_sqwt_clusters10_minpop1.png} }}%
   \qquad
-  \subfloat[$w(\xi)=\log(\xi)$]{{\includegraphics[width=5.5cm]{images/solution_logwt_clusters1_minpop1.png} }}%
-%  \qquad
-%  \subfloat[][$w(\alpha_i)=\begin{cases}\alpha_i, & \alpha_i > 1\\ 0, & \text{otherwise} \end{cases}$]{{\includegraphics[width=5.5cm]{images/thresholdweight.png} }}
-  \caption{Multiple distribution center placement under various weighting functions. The value of the cost function is displayed, and centers are shown in black.}
-  \label{fig:centers}
+  \subfloat[$w(\xi)=\log(\xi)$]{{\includegraphics[width=5.5cm]{images/solution_logwt_clusters10_minpop1.png} }}%
+  \caption{Distribution center placement under various weighting functions. The value of the cost function is displayed, and centers are shown in black.}
+  \label{fig:weightcomp}
 \end{figure}
 
+As in the case of one distribution center, choice of weighting function has little effect on center location. Log weighting, which curbs the influence of points with high population, does not show substantially different center placement from square weighting, which increases the influence of high population. It is possible that this behavior is a result of some non-general aspect of our problem, such as the population distribution and density of Massachusetts, or the discrete and often highly spread out distribution of points, but in our case, the weighting function has little effect on center placement.
+
 \section{Conclusions \& Future Work}
+
 The choice of weighting function is a potential area of further, concentrated study. We assume that the weighting function is chosen based on \textit{a priori} domain knowledge, which suggests an investigation into data-driven choices of weighting functions for known business problems. The focus of this project was the development of an augmentation to Lloyd's algorithm that scaled with the number of clusters. We were successful to that end and are pleased with our clustering results.
 
 Another interesting future variation that lends itself to study is how the clustering changes with the granularity of the population data. We utilized US Census\cite{census} block data that, while sufficiently detailed for a macro analysis of Massachusetts, is not detailed enough to provide adequate insight for the optimal location of distribution and/or retail centers within a densely populated city. If we had access to parcel data (storefronts and other properties at the street level) it is likely that our clustering solution would be fundamentally different from those presented in this paper.
