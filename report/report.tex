@@ -42,7 +42,7 @@ Unless otherwise specified, $d$ is the standard Euclidean distance. Of course, t
 \subsection{Census Data}
 Throughout the paper, we test our algorithms using census block population data for Massachusetts from the 2010 U.S. Census. A census block is the smallest geographic unit for which population data is collected for every resident. Population data on a block level is available at \cite{census}, and can be parsed using geographic information software such as the Python Shapefile Library \cite{pyshp}. To generate a representative point for each block, we enclose the block in a bounding rectangle, then take the center of that rectangle to be the location of the block.
 
-Although the 2010 Census divided Massachusetts into 157,508 total census blocks, 61,174 of those blocks have a population of zero (since every point in the United States is within a census block, and since census blocks are often delimited by geographical features, many blocks are partially or totally located in lakes, national parks, shopping malls, and so forth). We ignore these blocks in our analysis because they are of little interest in the context of placing distribution centers to serve potential customers.
+Although the 2010 Census divided Massachusetts into 157,508 total census blocks, 61,174 of those blocks have a population of zero (since every point in the United States is within a census block, and since census blocks are often delimited by geographical features, many blocks are partially or totally located in lakes, national parks, shopping malls, and so forth) \cite{blocks}. We ignore these blocks in our analysis because they are of little interest in the context of placing distribution centers to serve potential customers.
 
 \section{One Distribution Center} \label{onecenter}
 When $k=1$, the weighted $k$-centers problem is easily solved via compass search. Compass search is a simple method of minimizing a function $f : \R^n \rightarrow \R$ that does not require computation of the gradient. The algorithm is described in Algorithm \ref{alg:compass} (see \cite{survey} for further details).
@@ -82,7 +82,7 @@ Figure \ref{fig:popscale} shows distribution center placement for various $w$. A
   \subfloat[$w(\alpha_i)=1$]{{\includegraphics[width=5.5cm]{images/noweight.png} }}%
   \qquad
   \subfloat[][$w(\alpha_i)=\begin{cases}\alpha_i, & \alpha_i > 1\\ 0, & \text{otherwise} \end{cases}$]{{\includegraphics[width=5.5cm]{images/thresholdweight.png} }}
-  \caption{Distribution center placement under various population\\scaling functions. The centers are shown in red.}
+  \caption{Distribution center placement under various weighting \\ functions. The centers are shown in red.}
   \label{fig:popscale}
 \end{figure}
 
@@ -129,17 +129,29 @@ Without rescaling, it is difficult to compare results with different choices of 
 
 $$\sum_i w(\xi_i)$$
 
-This roughly corresponds to a rescaling to the same scale of the case when $w(\xi) = \xi$.
+This roughly corresponds to a rescaling to the same scale of the case when $w(\xi) = \xi$. Rescaling the tolerance is equivalent to choosing a smaller tolerance to start with. However, rescaling is a systematic way of converting a tolerance with a physical interpretation to one suited to the problem. 
 
-\subsection{Minimum Distribution Centers for $w(\xi) = \xi$}
-
-
-\subsection{Minimum Distribution Centers for Other Weightings}
+\subsection{Minimum Distribution Centers}
+Figure \ref{fig:centers} shows the results of generating 10 clusters under five different weighting functions. 
+\begin{figure}[!ht]%
+  \centering
+  \subfloat[$w(\xi)=\xi$]{{\includegraphics[width=5.5cm]{images/solution_linwt_clusters10_minpop1.png} }}%
+  \qquad
+  \subfloat[$w(\xi)=\sqrt{\xi}$]{{\includegraphics[width=5.5cm]{images/solution_sqrtwt_clusters3_minpop1.png} }}%
+  \qquad
+  \subfloat[$w(\xi)=\xi^2$]{{\includegraphics[width=5.5cm]{images/solution_sqwt_clusters10_minpop1.png} }}%
+  \qquad
+  \subfloat[$w(\xi)=\log(\xi)$]{{\includegraphics[width=5.5cm]{images/solution_logwt_clusters1_minpop1.png} }}%
+%  \qquad
+%  \subfloat[][$w(\alpha_i)=\begin{cases}\alpha_i, & \alpha_i > 1\\ 0, & \text{otherwise} \end{cases}$]{{\includegraphics[width=5.5cm]{images/thresholdweight.png} }}
+  \caption{Multiple distribution center placement under various weighting functions. The value of the cost function is displayed, and centers are shown in black.}
+  \label{fig:centers}
+\end{figure}
 
 \section{Conclusions \& Future Work}
 The choice of weighting function is a potential area of further, concentrated study. We assume that the weighting function is chosen based on \textit{a priori} domain knowledge, which suggests an investigation into data-driven choices of weighting functions for known business problems. The focus of this project was the development of an augmentation to Lloyd's algorithm that scaled with the number of clusters. We were successful to that end and are pleased with our clustering results.
 
-Another interesting future variation that lends itself to concentrated study is how the clustering changes with the granularity of the population data. We utilized US Census\cite{census} block data that, while sufficiently detailed for a macro analysis of Massachusetts, is not detailed enough to provide adequate insight for the optimal location of distribution and/or retail centers within a densely populated city. If we had access to parcel data (storefronts and other properties at the street level) it is easy to assume that our clustering solution would be fundamentally different from those presented in this report.
+Another interesting future variation that lends itself to study is how the clustering changes with the granularity of the population data. We utilized US Census\cite{census} block data that, while sufficiently detailed for a macro analysis of Massachusetts, is not detailed enough to provide adequate insight for the optimal location of distribution and/or retail centers within a densely populated city. If we had access to parcel data (storefronts and other properties at the street level) it is likely that our clustering solution would be fundamentally different from those presented in this paper.
 
 \begin{thebibliography}{9}
   \bibitem{kmeans}
@@ -156,5 +168,7 @@ Another interesting future variation that lends itself to concentrated study is 
   \textit{Python Shapefile Library}. Github repository. Retrieved from https://github.com/GeospatialPython/pyshp
   \bibitem{1D}
   Chen, D. Z., Li, J., \& Wang, H. Efficient Algorithms for the One-Dimensional $k$-Center Problem (2015). \textit{Theoretical Computer Science 592}, pp. 135-142.
+  \bibitem{blocks}
+  Rossiter, K. (2011, July 20). What are census blocks? [Web log post]. Retrieved from http://blogs.census.gov/2011/07/20/what-are-census-blocks/
 \end{thebibliography}
 \end{document}
