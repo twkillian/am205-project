@@ -30,7 +30,7 @@ validation_pop = validation_array[:,2]
 
 # Initialization and setup
 tol = 250                 # maximum acceptable average distance from consumer to distributor, this should not be above 400; otherwise, >1e6 is ok
-max_clusters = 15
+max_clusters = 10
 tries_per_iter = 3        # Stochastically vary intialization points to avoid being stuck in local minima
 max_pop = float(max(pop)) # Largest population at a single point in the grid
 thres = 1                # Thresholding for minimum population size that we adjust our centers for.
@@ -40,11 +40,11 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 	print "Using {} weighting".format(i_weight)
 
 	# Compute the scale by which we'll normalize the weights
-	if i_weight == 'lin': scale = 1
-	elif i_weight == 'sq': scale = float(np.sum(test_pop))/np.sum(test_pop**2)
-	elif i_weight == 'sqrt': scale = float(np.sum(test_pop))/np.sum(np.sqrt(test_pop))
-	elif i_weight == 'log': scale = float(np.sum(test_pop))/np.sum(np.log(test_pop))
-	elif i_weight == 'max': scale = 1/max_pop
+	if i_weight == 'lin': scale = float(np.sum(test_pop))
+	elif i_weight == 'sq': scale = np.sum(test_pop**2)
+	elif i_weight == 'sqrt': scale = np.sum(np.sqrt(test_pop))
+	elif i_weight == 'log': scale = np.sum(np.log(test_pop))
+	elif i_weight == 'max': scale = max_pop
 	else: scale = 1
 
 	# Per separate weighting problem initialization
@@ -55,7 +55,7 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 
 	# Iteratively add new distribution centers and find their optimal location 
 	# until population is provided sufficient access to distribution centers
-	while (min_err > tol) and (num_clusters < max_clusters):
+	while (min_err > float(tol)/scale) and (num_clusters < max_clusters):
 		num_clusters += 1
 		min_err = np.inf
 
@@ -77,11 +77,11 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 
 	print "Found solution! With weighting function {0}, there are {1} clusters with error {2}. Plotting result now...".format(i_weight, num_clusters, min_err)
 
-	if i_weight == 'lin': validation_scale = 1
-	elif i_weight == 'sq': validation_scale = float(np.sum(validation_pop))/np.sum(validation_pop**2)
-	elif i_weight == 'sqrt': validation_scale = float(np.sum(validation_pop))/np.sum(np.sqrt(validation_pop))
-	elif i_weight == 'log': validation_scale = float(np.sum(validation_pop))/np.sum(np.log(validation_pop))
-	elif i_weight == 'max': validation_scale = 1/max_pop
+	if i_weight == 'lin': validation_scale = float(np.sum(validation_pop))
+	elif i_weight == 'sq': validation_scale = np.sum(validation_pop**2)
+	elif i_weight == 'sqrt': validation_scale = np.sum(np.sqrt(validation_pop))
+	elif i_weight == 'log': validation_scale = np.sum(np.log(validation_pop))
+	elif i_weight == 'max': validation_scale = max_pop
 	else: validation_scale = 1
 	validation_error = error(centers, validation_array[:,:2], validation_pop, avg=True, wt=i_weight, scale=validation_scale, max_pop=max_pop, threshold=thres)
 
@@ -97,12 +97,9 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 		plt.plot(centers[key][0], centers[key][1],'ko', markersize=10)
 
 		i += 1
-	plt.grid(b=False)
-	plt.xticks([])
-	plt.yticks([])
-	plt.axes(axisbg='white',frameon=False)
+	plt.axis('off')
 	plt.annotate('Cost: %0.5f' % validation_error, xy=(15,20), xytext=(15,20), fontsize=30)
-	plt.savefig('images/solution_clusters{0}_minpop{1}_{2}wt.png'.format(num_clusters,thres,i_weight))
+	plt.savefig('images/solution_{0}wt_clusters{1}_minpop{2}.png'.format(i_weight,num_clusters,thres))
 	# plt.show()
 
 

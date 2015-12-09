@@ -33,7 +33,7 @@ def euclidean(p, q):
 
 def weight(cur_pop, wt='lin', max_pop=1, threshold=1): # User supplied weighting function of each 
 	if wt == 'lin':       
-		if cur_pop <= threshold:
+		if cur_pop < threshold:
 			return 0
 		else: return cur_pop
 	elif wt == 'sq':     return cur_pop*cur_pop
