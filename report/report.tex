@@ -3,33 +3,55 @@
 \captionsetup{justification=centering}
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\C}{\mathcal{C}}
+\newcommand{\X}{\mathcal{X}}
 \DeclareMathOperator*{\argmin}{\arg\!\min}
 
 \begin{document}
 \title{Weighted $k$-Centers \& Lloyd's Algorithm}
-\author{Jonathan Friedman \& Taylor Killiam}
+\author{Jonathan Friedman \& Taylor Killian}
 \maketitle
 
-%TODO before submission: make everything pretty and readable
 \begin{abstract}
-Words
+When determining the optimal distribution of distribution centers (e.g. warehouses, regional retail, or neighborhood commercial property), consideration must be made to maximize customer utility. It is assumed that individuals prefer the distance from them to any distribution center be minimized. To determine an optimal distribution of distribution centers to minimize the average person's distance from any center, Lloyd's algorithm was altered to solve a variant of weighted $k$-centers. This augmented clustering algorithm was used to simulate a variety of distribution paradigms (differentiated by the weighting function used) using the 2010 U.S. Census population data for Massachusetts which provides a dense decision surface to optimize over. Results reaffirm the intuition that dense areas of high population are optimal locations to place centers. These solutions are highly dependent on the granularity of the data and how the population at each data point is weighted. 
+
 \end{abstract}
 
 \section{Introduction} \label{introduction}
-Serving the maximum number of people at minimum expense is an important and general problem in industry. A company must balance placing their distribution centers near as many people as possible with the cost associated with opening and maintaining a large number of centers. In this paper, we examine a variant of the problem of placing distribution centers so that a specified cost function, such as average distance from a center, is below a given threshold. This general formulation is known as the metric $k$-center problem \cite{kmeans}. We examine the variant in which each point has a weight that affects its distance from the center point; in this case, the weight is a function of the population of the point. This leads to a metric $k$-center problem on a non-metric space. Efficient algorithms to solve this problem exist in one dimension \cite{1D}. For the two-dimensional case, we adapt Lloyd's algorithm, a clustering algorithm commonly applied to this problem, to work on this space by incorporating nonlinear least squares into the clustering step. 
+Serving the maximum number of people at minimum expense is an important and general problem in industry. A company must balance placing their distribution centers near as many people as possible with the cost associated with opening and maintaining a large number of centers. A general formulation of this problem known as the metric $k$-center problem asks for a placement of $n$ distribution centers that minimizes the maximum distance from any point to a center \cite{kmeans}. In this paper, we examine the variant in which each point has a weight that affects its distance from the center point; in this case, the weight is a function of the population at the point. We also seek to minimize the sum of the maximum distances rather than the maximum individual distance. Efficient algorithms to solve this problem exist in one dimension \cite{1D}. For the two-dimensional case, we adapt Lloyd's algorithm, a clustering algorithm commonly applied to this type of problem, to work on this space by modifying the clustering step. 
 
-If no attempt is made to avoid local extrema, then this problem is easy to solve for one center. In section \ref{onecenter}, we give a solution for one center using compass search. However, compass search is not viable for a large number of points because the number of required directions to search grows quickly. In section \ref{multicenters}, we give a solution method for an arbitrary number of centers using the modified Lloyd's algorithm. In section \ref{experiments}, we use our algorithm to optimize placement of distribution centers in Massachusetts based on population data from the U.S. 2010 Census \cite{census}, as well as to find the smallest number of distribution centers to reduce the cost function below a given tolerance level. 
+If no attempt is made to avoid local extrema, then this problem is easy to solve for one center. In section \ref{onecenter}, we give a solution for one center using compass search. However, compass search is not viable for a large number of points because the number of required directions to search grows quickly. In section \ref{multicenters}, we give a solution method for an arbitrary number of centers using the modified Lloyd's algorithm. In section \ref{experiments}, we use our algorithm to optimize placement of distribution centers in Massachusetts based on population data from the U.S. 2010 Census, as well as to find the minimum number of distribution centers that produces a solution with a cost function below a given tolerance level.
 
-% TODO: Dimensionless metric
+\section{Background \& Data} \label{background}
+\subsection{Background}
+Let $\C$ be the set of distribution centers, let $\X$ be the set of points which the centers serve, and let $d$ be a distance metric. In the general metric $k$-center problem, the goal is to minimize
+
+$$\max_{p_i \in \X} \min_{c \in \C} d(c, p_i)$$
+
+Now let $\xi_i$ be the population at point $p_i \in \X$, and $w$ be a weight function (we consider only weight functions where $\xi_i > \xi_j \implies w(\xi_i) \geq w(\xi_j)$, but more exotic weighting functions could be useful in other contexts). In the version of the weighted $k$-center problem that we consider, the goal is to minimize our cost function, the ``weighted mean distance" function
+
+$$\frac{\sum_i w(\xi_i) \min_{c \in \C} d(c, p_i)}{|\X|}$$
+
+Note that while the minimum achieved in the standard metric $k$-center problem corresponds to distance, the minimum achieved in the weighted problem does not have a direct physical interpretation. When $w$ is the identity function, it corresponds to minimizing the distance from the average person, rather than the average point, to its nearest distribution center. In general, it can be intuitively thought of as a weighted analogue to this mean distance, but its precise interpretation depends on the domain and context of the problem.
+
+The choice of $w$ is also context and domain dependent. 
+%check if this pans out
+A superlinear $w$ could be used in a situation in which it is not as useful to place distribution centers near areas of low population density; for example, an expensive specialty store might place great importance on serving urban areas. A sublinear $w$ could be used in a situation in which optimally serving areas of high population density is not important, as in the case of a big-box retailer that customers generally visit infrequently.
+
+Unless otherwise specified, $d$ is the standard Euclidean distance. Of course, this distance metric does not capture the true surface distance between points on the Earth. Since we test our algorithm on geographic data, we should, strictly speaking, use a different distance function such as the haversine formula; however, Euclidean distance provides a good approximation on small areas such as Massachusetts.
+
+\subsection{Census Data}
+Throughout the paper, we test our algorithms using census block population data for Massachusetts from the 2010 U.S. Census. A census block is the smallest geographic unit for which population data is collected for every resident. Population data on a block level is available at \cite{census}, and can be parsed using geographic information software such as the Python Shapefile Library \cite{pyshp}. To generate a representative point for each block, we enclose the block in a bounding rectangle, then take the center of that rectangle to be the location of the block.
+
+Although the 2010 Census divided Massachusetts into 157,508 total census blocks, 61,174 of those blocks have a population of zero (since every point in the United States is within a census block, and since census blocks are often delimited by geographical features, many blocks are partially or totally located in lakes, national parks, shopping malls, and so forth). We ignore these blocks in our analysis because they are of little interest in the context of placing distribution centers to serve potential customers.
 
 \section{One Distribution Center} \label{onecenter}
-Compass search is a simple method of minimizing a function $f \in \R^n$ that does not require computation of the gradient. The algorithm is described in Algorithm \ref{alg:compass} (see \cite{survey} for further details).
+When $k=1$, the weighted $k$-centers problem is easily solved via compass search. Compass search is a simple method of minimizing a function $f : \R^n \rightarrow \R$ that does not require computation of the gradient. The algorithm is described in Algorithm \ref{alg:compass} (see \cite{survey} for further details).
 
 \begin{algorithm}
   \caption{Compass Sort}
   \label{alg:compass}
 \begin{algorithmic}
-  \STATE  Choose $\lambda_1,...,\lambda_m$ to be a positive spanning set of $\R^n$. Choose a starting guess $p_0$, a step size $s_0$, a scaling constant $\alpha<1$, and a tolerance $t$.
+  \STATE  Let $\lambda_1,...,\lambda_m$ be a positive spanning set of $\R^n$. Choose a starting guess $p_0$, a step size $s_0$, a scaling constant $\alpha<1$, and a tolerance $t$.
   \WHILE{$s_k > t$}
   \IF{$f(p_k + s_k\lambda_i) < f(p_k)$ for some $\lambda_i$}
   \STATE $p_{k+1} = p_k + s_k\lambda_i$
@@ -43,53 +65,79 @@ Compass search is a simple method of minimizing a function $f \in \R^n$ that doe
 \end{algorithmic}
 \end{algorithm}
 
-We minimize
-$$\sum_i w(\alpha_i) d(p, q_i)$$
-where $p$ is the location of the point of service, $\alpha_i$ and $q_i$ are the population at and location of point $i$, $w$ is a function that weights the population, $d$ is a distance function, and the sum is over all points for which we have population data (in practice, because there are around 160,000 census blocks in Massachusetts, we subsample the population data to achieve better performance). Figure \ref{fig:popscale} shows distribution center placement for various $w$, with $d(p-q_i) = ||p - q_i||_2$. As expected, the distribution center is consistently placed near Boston. Under $w(x) = \sqrt{x}$, the center moves farther away from Boston as the influence of high population to the objective function is decreased, and under $w(x) = x^2$, the center moves closer to Boston. However, the choice of weighting function appears to have little effect on placement of the center. Even when population is not taken into account, the center remains fairly close to Boston by virtue of the large number of census blocks located there.
+As above, we choose $f$ to be
+
+$$\frac{\sum_i w(\xi_i) d(c, p_i)}{|\X|}$$.
+
+Figure \ref{fig:popscale} shows distribution center placement for various $w$. As expected, the distribution center is consistently placed near Boston. Under $w(x) = \sqrt{x}$, the center moves farther away from Boston as the influence of high population to the objective function is decreased, and under $w(x) = x^2$, the center moves closer to Boston. However, the choice of weighting function appears to have little effect on placement of the center. Even when population is not taken into account, the center remains fairly close to Boston by virtue of the large number of census blocks located there.
 
 \begin{figure}[!ht]%
   \centering
-  \subfloat[$w(\alpha_i)=\alpha_i$]{{\includegraphics[width=5.5cm]{linweight.png} }}%
+  \subfloat[$w(\alpha_i)=\alpha_i$]{{\includegraphics[width=5.5cm]{images/linweight.png} }}%
   \qquad
-  \subfloat[$w(\alpha_i)=\sqrt{\alpha_i}$]{{\includegraphics[width=5.5cm]{sqrtweight.png} }}%\\
+  \subfloat[$w(\alpha_i)=\sqrt{\alpha_i}$]{{\includegraphics[width=5.5cm]{images/sqrtweight.png} }}%
   \qquad
-  \subfloat[$w(\alpha_i)=\alpha_i^2$]{{\includegraphics[width=5.5cm]{sqweight.png} }}%
+  \subfloat[$w(\alpha_i)=\alpha_i^2$]{{\includegraphics[width=5.5cm]{images/sqweight.png} }}%
   \qquad
-  \subfloat[$w(\alpha_i)=1$]{{\includegraphics[width=5.5cm]{noweight.png} }}%
+  \subfloat[$w(\alpha_i)=1$]{{\includegraphics[width=5.5cm]{images/noweight.png} }}%
+  \qquad
+  \subfloat[][$w(\alpha_i)=\begin{cases}\alpha_i, & \alpha_i > 1\\ 0, & \text{otherwise} \end{cases}$]{{\includegraphics[width=5.5cm]{images/thresholdweight.png} }}
   \caption{Distribution center placement under various population\\scaling functions. The centers are shown in red.}
   \label{fig:popscale}
 \end{figure}
 
-This method works well for one distribution center, but the number of directions to search grows quickly with the number of centers.  Consider the case of points $c_1, ..., c_n \in \R^2$. Our function to minimize is now $$\sum_i w(\alpha_i)\min\Big(d(c_1, p_i), ..., d(c_n, p_i)\Big)$$ which corresponds to minimizing each person's distance from the nearest point of service. A positive spanning set for $\R^n$ must contain at least $n+1$ vectors \cite{charles}, so we must consider up to three possible directions at each step for each $p_i$. Determining the exact number of directions that must be searched for $n$ points in order to guarantee convergence to some maximum is beyond the scope of this paper. 
+This method works well for one distribution center, but the number of directions to search grows quickly with the number of centers.  Consider the case of $n$ clusters $c_1, ..., c_n \in \R^2$. Our function to minimize is now the full weighted mean distance function
+
+$$\frac{\sum_i w(\xi_i) \min_{c \in \C} d(p_i, c)}{|\X|}$$
+
+A positive spanning set for $\R^n$ must contain at least $n+1$ vectors \cite{charles}, so we must consider up to three possible directions at each step for each $p_i$. Determining the exact number of directions that must be searched for $n$ points in order to guarantee convergence to some maximum is beyond the scope of this paper. Suffice to say that better, more scaleable methods exist.
 
 \section{Multiple Distribution Centers} \label{multicenters}
-Lloyd's algorithm provides a more scaleable solution for multiple distribution centers. This algorithm was originally applied to problems in information theory \cite{lloyd}, but has been adapted to other problems, such as clustering. A detailed description is given in Algorithm \ref{alg:lloyd} (see \cite{kmeans} for further details).The general algorithm works as follows: first, assign, via some method, starting locations for the centers. Then, assign each center a cluster composed of points closer to it than to another center. Next, iteratively move the centers to the centers of their respective Voronoi cells. Repeat until the centers do not move between iterations. However, weighting points by population weights eliminates the metric structure of the space, since a point far from a center with high population, in terms of Euclidean distance, can be ``closer" than a nearby point with small population. Therefore, in the center adjusting step, we find the new location for a center $c$ in cluster $\C$ by solving the optimization problem
-$$\argmin_{c} \sum_{i \in \C} w(\alpha) d(p_i, c)$$
-This is equivalent to finding a root of the gradient.
+Lloyd's algorithm provides a more scaleable solution for multiple distribution centers. This algorithm was originally applied to problems in information theory \cite{lloyd}, but has been adapted to other fields such as clustering. A detailed description is given in Algorithm \ref{alg:lloyd} (see \cite{kmeans} for further details).The general algorithm works as follows: first, assign, via some method, starting locations for the centers. Then, assign each center a cluster $\Gamma$ composed of points closer to it than to another center. Next, iteratively move the centers to the centers of their respective Voronoi cells. Repeat until the centers do not move between iterations. Therefore, in the center adjusting step, we find the new location for a center $c$ in cluster $\Gamma$ by solving the optimization problem
 
-A cluster is $\{p \in X : d(p, c_j) < d(p, c_k) \ \forall k \neq j\}$.
+$$\argmin_{c} \sum_{\{i: p_i \in \Gamma\}} w(\xi_i) d(p_i, c)$$
+
+This is equivalent to finding a root of the gradient
+
+$$\Bigg[ \sum_{\{i: p_i \in \Gamma\}} w(\xi_i) \Big(\frac{p_{ix} - c_x}{d(p_i, c)}\Big), \sum_{\{i: p_i \in \Gamma\}} w(\xi_i) \Big(\frac{p_{ix} - c_y}{d(p_i, c)}\Big) \Bigg]$$
 
 We randomly assign starting centers, though other initialization methods may be used.
 
 \begin{algorithm}
-  \caption{Lloyd's Algorithm with Nonlinear Least Squares}
+  \caption{Lloyd's Algorithm with Weighting}
   \label{alg:lloyd}
 \begin{algorithmic}
-  \STATE  Randomly choose $n$ centers $x_1^1, ..., x_n^1$.
-  \WHILE {$\exists x_i : x_i^k \neq x_i^{k-1}$}
-  \STATE Things
+  \STATE  Randomly choose $n$ initial centers $\{c_1^1, ..., c_n^1\}=\C$, and let $\{\gamma_1, ..., \gamma_n\}=\Gamma$ be their corresponding clusters. 
+  \WHILE {$\exists c_i : c_i^k \neq c_i^{k-1}$}
+  \FOR{$\gamma_i \in \Gamma$}
+    \STATE $\gamma_i = \{x \in \X : d(x, c_i^k) < d(x, c_j^k) \ \forall j \neq i\}$
+  \ENDFOR
+  \FOR{$c_i \in \C$}
+    \STATE $c_i^k = \argmin_{\chi} \sum_{\{i : p_i \in \gamma\}} w(\xi_i) d(p_i, \chi)$
+  \ENDFOR
   \ENDWHILE
 \end{algorithmic}
 \end{algorithm}
 
-This suffices to find a solution for a given number of distribution centers. To find a solution such that the cost function is below a given threshold and the number of centers is minimized, run the algorithm for $1, 2, ...$ centers until the cost function falls below the threshold. Lloyd's algorithm is not guaranteed to produce a global minimum, so to more fully explore the space, we run the algorithm several times with randomly chosen starting points for each number of centers.
+This suffices to find a solution for a given number of distribution centers. To find a solution such that the cost function is below a given threshold and the number of centers is minimized, run the algorithm for $1, 2, ...$ centers until the cost function falls below the threshold. Lloyd's algorithm is not guaranteed to produce a global minimum, so to more fully explore the space, we run the algorithm several times with randomly chosen starting points for each choice of $k$.
 
 \section{Experiments} \label{experiments}
-\subsection{Data} \label{data}
+As in the case of one distribution center, we test our algorithm on U.S. census data from Massachusetts. In order to compare results with the same tolerance and different $w$, we develop a simple rescaling. Then, we solve the problem of placing the minimum number of centers such that the weighted mean distance with $w(\xi) = \xi$ is below a given level. Finally, we then solve the problem for the same tolerance but with different $w$.
 
-We test our algorithms using census block population data for Massachusetts from the 2010 U.S. Census. The 2010 census divided Massachusetts into 157,508 census blocks. Population data on a block level available at \cite{census}, and can be parsed using geographic information software such as the Python Shapefile Library \cite{pyshp}. To generate a representative point for each block, we enclose the block in a rectangle, then take the center of that rectangle to be the location of the block. We generally subsampled every 50 points in order to speed up runtimes. 
+\subsection{Rescaling} \label{rescaling}
+Without rescaling, it is difficult to compare results with different choices of $w$. For example, the weighted mean distance with $w(\xi) = \xi^2$ will necessarily be much greater than the weighted mean distance with $w(\xi) = \sqrt(\xi)$. Therefore, we divide both the tolerance and the cost function by
 
-%TODO: Describe we collected, parsed, subsampled, etc. census data.
+$$\sum_i w(\xi_i)$$
+
+This roughly corresponds to a rescaling to the same scale of the case when $w(\xi) = \xi$.
+
+\subsection{Minimum Distribution Centers for $w(\xi) = \xi$}
+
+
+\subsection{Minimum Distribution Centers for Other Weightings}
+
+\section{Conclusions \& Future Work}
+The choice of weighting function is another potential area of study. We assume that the weighting function is chosen based on \textit{a priori} domain knowledge, which suggests an investigation into data-driven choices of weighting functions for known business problems.
 
 \begin{thebibliography}{9}
   \bibitem{kmeans}
