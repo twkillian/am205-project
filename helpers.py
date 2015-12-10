@@ -2,17 +2,6 @@ from math import *
 import numpy as np
 # import shapefile
 
-def dist(coords, r=6371000):
-	"""
-	Calculates the surface distance in meters between two points 
-	on a sphere of radius r. Uses haversine formula from
-	https://en.wikipedia.org/wiki/Great-circle_distance#Computational_formulas 
-	"""
-	y1, x1, y2, x2 = coords
-	dphi = abs(x2 - x1)
-	dlambda = abs(y2 - y1)
-	return r*2*asin(sqrt((sin(dphi*0.5))**2 + cos(x1)*cos(x2)*(sin(dlambda*0.5))**2))
-
 def center(coords):
 	"""
 	Calculates the center of a box given the coordinates of the lower left corner 
@@ -22,6 +11,10 @@ def center(coords):
 	return [(y1 + y2)*0.5, (x1 + x2)*0.5]
 
 def read(shp='geofiles/tabblock2010_25_pophu/tabblock2010_25_pophu'):
+	"""
+	Reads shapefile. The default file is the population data from the 2010 census, which
+	can be found at http://www2.census.gov/geo/tiger/TIGER2010/TABBLOCK/2010/
+	"""
 	sf = shapefile.Reader(shp)
 	sr = sf.shapeRecords()
 	for i in sr:
@@ -31,7 +24,8 @@ def euclidean(p, q):
 	""" Euclidean distance. """
 	return sqrt((p[0] - q[0])**2 + (p[1] - q[1])**2)
 
-def weight(cur_pop, wt='lin', max_pop=1, threshold=1): # User supplied weighting function of each 
+def weight(cur_pop, wt='lin', max_pop=1, threshold=1):
+	""" Weights points according to the given weighting function. """ 
 	if wt == 'lin':       
 		if cur_pop < threshold:
 			return 0
@@ -44,8 +38,8 @@ def weight(cur_pop, wt='lin', max_pop=1, threshold=1): # User supplied weighting
 
 def error(points, grid, pop, errfunc=euclidean, avg=False, wt='lin', scale=1, max_pop=1, threshold=1):
 	"""
-	Calculates the sum of the minimum errors given by f, weighted by sqrt(population),
-	of each gridpoint to a point in points.
+	Calculates the sum of the minimum errors given by f, weighted by weight(population) and 
+	scaled by scale, of each gridpoint to a point in points.
 	"""
 	err = 0
 	for i in range(grid.shape[0]):

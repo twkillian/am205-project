@@ -9,37 +9,36 @@ from sklearn.cross_validation import train_test_split
 from optimal_clustering import find_centers
 from helpers import error
 
+# Driver function that loads data, runs the modified Lloyd's algorithm, and produces plots.
 
+# Load the data
 newarray = np.loadtxt('popgrid.txt')
 newarray = newarray[newarray[:, 2] > 0]
 pop = newarray[:, 2]
 min_lat, min_lon = min(newarray[:,0]), min(newarray[:,1])# Get min lat and lon to subtract from pts
-cart_array = 100*(newarray[:,:2] - [min_lat, min_lon]) # Scaling by 100 and sampling by every 50 to spread out the data
+cart_array = 100*(newarray[:,:2] - [min_lat, min_lon]) # Scaling by 100 to spread out the data
 cart_array = np.concatenate((cart_array, newarray[:,2] \
 	.reshape(newarray.shape[0],1)),axis=1)
 
-# Need to switch lat and lon since we are now in cartesian space
-temp, temp2 = np.copy(cart_array[:,0]), np.copy(cart_array[:,1])
-cart_array[:,0] = temp2
-cart_array[:,1] = temp
+cart_array[:, [1, 0]] = cart_array[:, [0, 1]] # swap first two columns to get [lat, lon, pop]
 
-#Split data for validation purposes across different weighting functions
+# Split data into test and validation sets
 test_array, validation_array = train_test_split(cart_array, test_size = 0.15)
 test_pop = test_array[:,2]
 validation_pop = validation_array[:,2]
 
 # Initialization and setup
-tol = 250                 # maximum acceptable average distance from consumer to distributor, this should not be above 400; otherwise, >1e6 is ok
-max_clusters = 10
-tries_per_iter = 3        # Stochastically vary intialization points to avoid being stuck in local minima
+tol = 250                 # Terminate if cost function falls below this value
+max_clusters = 10         # Terminate after trying at most this many clusters
+tries_per_iter = 3        # Try this many choices of initial points
 max_pop = float(max(pop)) # Largest population at a single point in the grid
-thres = 1                # Thresholding for minimum population size that we adjust our centers for.
+thres = 1                 # Threshold for population filter
 
 for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 
 	print "Using {} weighting".format(i_weight)
 
-	# Compute the scale by which we'll normalize the weights
+	# Compute the scale for weight normalization
 	if i_weight == 'lin': scale = float(np.sum(test_pop))
 	elif i_weight == 'sq': scale = np.sum(test_pop**2)
 	elif i_weight == 'sqrt': scale = np.sum(np.sqrt(test_pop))
@@ -54,13 +53,13 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 	min_err = np.inf
 
 	# Iteratively add new distribution centers and find their optimal location 
-	# until population is provided sufficient access to distribution centers
+	# until either tol, or max_clusters, is reached
 	while (min_err > float(tol)/scale) and (num_clusters < max_clusters):
 		num_clusters += 1
 		min_err = np.inf
 
 		# Perform clustering tries_per_iter times choosing random starting points 
-		# at each iteration, save the best result 
+		# At each iteration, save the best result 
 		for i in range(tries_per_iter):
 
 			# Find optimal placement for number of distribution centers specified.
@@ -68,12 +67,12 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 			# Measure average consumer distance from distribution center
 			err = error(centers, test_array[:,:2], test_pop, avg=True, wt=i_weight, scale=scale, max_pop=max_pop, threshold=thres)
 
-			if min_err > err: # Check whether current sol'n has improved the previous sol'n
+			if min_err > err: # Check whether current soln has improved the previous soln
 				min_err = err
 				min_centers = centers
 				min_clusters = clusters
 
-		print num_clusters, min_err # Algorithm progress notification
+		print num_clusters, min_err # Keep the user updated
 
 	print "Found solution! With weighting function {0}, there are {1} clusters with error {2}. Plotting result now...".format(i_weight, num_clusters, min_err)
 
@@ -85,7 +84,7 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 	else: validation_scale = 1
 	validation_error = error(centers, validation_array[:,:2], validation_pop, avg=True, wt=i_weight, scale=validation_scale, max_pop=max_pop, threshold=thres)
 
-	# Plotting
+	# Plotting takes a while
 	palette = sns.hls_palette(num_clusters)
 	plt.figure()
 	i = 0
@@ -93,14 +92,9 @@ for i_weight in ['lin', 'sq', 'sqrt', 'log', 'max']:
 		cur_cluster = clusters[key]
 		for pt in cur_cluster:
 			plt.plot(pt[0], pt[1],'.',markersize=8, color=palette[i], alpha=pt[2]/max_pop)
-
 		plt.plot(centers[key][0], centers[key][1],'ko', markersize=10)
-
 		i += 1
+		
 	plt.axis('off')
 	plt.annotate('Cost: %0.5f' % validation_error, xy=(15,20), xytext=(15,20), fontsize=30)
 	plt.savefig('images/solution_{0}wt_clusters{1}_minpop{2}.png'.format(i_weight,num_clusters,thres))
-	# plt.show()
-
-
-
