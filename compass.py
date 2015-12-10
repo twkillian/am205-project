@@ -2,8 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import *
 
+# Performs a compass search for a single distribution center.
+
 def f(p, grid):
-	""" Evaluates f at point p over the given grid. """
+	""" Evaluates f at point p over the given grid. f is the function to minimize. """
 	err = 0
 	x, y = p
 	for i in range(grid.shape[0]):
@@ -11,6 +13,7 @@ def f(p, grid):
 	return sqrt(err)
 
 def threshold(p, t=1):
+	""" Points with population below t are ignored. """ 
 	if p > t:
 		return p
 	return 0
@@ -26,14 +29,15 @@ def move(dir, step):
 	elif (dir == 3):
 		return step * np.array([-1, 0])
 
+# Standard data loading
 newarray = np.loadtxt('popgrid.txt')
 newarray = newarray[newarray[:, 2] > 0]
 max_pop = np.max(newarray[:, 2])
 min_lat, min_lon = min(newarray[:, 0]), min(newarray[:, 1]) # Get min lat and lon to subtract from pts
-cart_array = 100*(newarray[:, 0:2] - [min_lat, min_lon]) # Scaling by 100 and sampling by every 50 to spread out the data
+cart_array = 100*(newarray[:, 0:2] - [min_lat, min_lon]) # Scaling by 100 to spread out the data
 cart_array = np.concatenate((cart_array, newarray[:, 2]
 	                  		 .reshape(newarray[:, 2].shape[0], 1)), axis=1)
-cart_array[:, [1, 0]] = cart_array[:, [0, 1]] # swap first two columns
+cart_array[:, [1, 0]] = cart_array[:, [0, 1]] # swap first two columns to get [lat, lon, pop]
 
 p = np.array([150., 135.]) # initial guess
 directions = np.zeros(4) # north, east, south, west
@@ -42,6 +46,7 @@ tol = 1e-5
 step = 1
 count = 0
 
+# Algorithm 1 in the paper
 while True:
 	count += 1
 	directions[0] = f(p + step * np.array([0, 1]), cart_array)
@@ -62,13 +67,13 @@ while True:
 
 print p, count, step
 
+# Plotting takes a while
 fig = plt.figure(figsize=(10, 8))
 for i in range(cart_array.shape[0]):
 	plt.plot(cart_array[i, 0], cart_array[i, 1],'.',markersize=8, color='b',
 		     alpha=cart_array[i, 2] / max_pop)
-# plt.scatter(cart_array[:, 0], cart_array[:, 1], alpha=cart_array[:, 2] / max_pop, s=25)
 plt.xlim(-10, 370)
 plt.ylim(-10, 200)
 plt.plot(p[0], p[1], '.', markersize=40, color='r')
 plt.axis('off')
-plt.savefig('thresholdweight.png')
+plt.savefig('file.png')

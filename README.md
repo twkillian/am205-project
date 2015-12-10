@@ -1,7 +1,7 @@
 # am205-project
 
 ****************************************************************
-README for the functions and methods prepared for Fall 2015 Final Project for AM205, used to optimally determine distribution centers over a set of geographic points with population information. 
+README for the functions and methods prepared for Fall 2015 Final Project for AM205, used to optimally determine distribution centers over a set of geographic points with population information. [Check out our paper!](https://github.com/twkillian/am205-project/blob/master/report/report.pdf)
 
 Project by Jonathan Friedman and Taylor Killian
 ***************************************************************
