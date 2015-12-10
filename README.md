@@ -5,10 +5,14 @@ README for the functions and methods prepared for Fall 2015 Final Project for AM
 
 Project by Jonathan Friedman and Taylor Killian
 ***************************************************************
-
 There are three .py files that are necessary to run and operate our code.
 -- <code>driver.py</code> : Driver file that sets up and organizes the types of weights and clusterings that are to be used to locate the optimal placement of distribution centers.
 -- <code>optimal_clustering.py</code> : file that contains the modules and functions used to perform the clustering according to weighted least squares.
+=======
+There are three .py files that are necessary to run and operate our code.   
+-- <code>driver.py</code> : Driver file that sets up and organizes the types of weights and clusterings that are to be used to locate the optimal placement of distribution centers.   
+-- <code>optimal_clustering.py</code> : file that contains the modules and functions used to perform the clustering according to weighted least squares.   
+>>>>>>> 30a62e68a381d03e1d45a7781175d4815b1d49b1
 -- <code>helpers.py</code> : a set of helper functions used to clean and process the data, as well as measure the error of our intermediate and final solutions. (If you want to use your own geographical shapefiles, you can uncomment <code>import shapefile</code> and use [pyshp](https://github.com/GeospatialPython/pyshp), or the GIS of your choice.) 
 
 There is also <code>geoparse.py</code> which demonstrates how to read in a shapefile using our code.

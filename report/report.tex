@@ -35,7 +35,7 @@ Note that while the minimum achieved in the standard metric $k$-center problem c
 
 The choice of $w$ is also context and domain dependent, as shown below in Section \ref{experiments}. See section \ref{results} for further discussion.
 
-Unless otherwise specified, $d$ is the standard Euclidean distance. Of course, this distance metric does not capture the true surface distance between points on the Earth. Since we test our algorithm on geographic data, we should, strictly speaking, use a different distance function such as the haversine formula. Euclidean distance provides a good approximation on sufficiently small regions, such as the state of Massachusetts, for which the curvature of the Earth is effectively negligible when calculating the distance between two points.
+Unless otherwise specified, $d$ is the standard Euclidean distance. Of course, this distance metric does not capture the true surface distance between points on the Earth. Since we test our algorithm on geographic data, we should, strictly speaking, use a different distance function such as the haversine formula. Euclidean distance provides a good approximation on sufficiently small regions, such as the state of Massachusetts, for which the curvature of the Earth is negligible when calculating the distance between two points.
 
 We also consider the use of a population filter to ignore points below a given population. We call $p: \R\rightarrow\R$ a population filter if, for some $n \in \mathbb{N}$,
 
@@ -101,7 +101,7 @@ A positive spanning set for $\R^n$ must contain at least $n+1$ vectors \cite{cha
 \end{algorithm}
 
 \section{Multiple Distribution Centers} \label{multicenters}
-Lloyd's algorithm provides a more scaleable solution for multiple distribution centers. This algorithm was originally applied to problems in information theory \cite{lloyd}, but has been adapted to other fields such as clustering. A detailed description is given in Algorithm \ref{alg:lloyd} (see \cite{kmeans} for further details).The general algorithm works as follows: first, assign, via some method, starting locations for the centers $c_i$. Then, assign each center $c_j$ a cluster $\Gamma$ of points that are closer to $c_i$ than to any other $c_k, \ \ j\neq k$. Next, adjust the location of the $c_i$ to the centers of their respective clusters. Repeat until the $c_i$ do not move between iterations.
+Lloyd's algorithm provides a more scaleable solution for multiple distribution centers. This algorithm was originally applied to problems in information theory \cite{lloyd}, but has been adapted to other fields such as clustering. A detailed description is given in Algorithm \ref{alg:lloyd} (see \cite{kmeans} for further details).The general algorithm works as follows: first, assign, via some method, starting locations for the centers $c_i$. Then, assign each center $c_j$ a cluster $\Gamma$ of points that are closer to $c_j$ than to any other $c_k, \ \ j\neq k$. Next, adjust the location of the $c_i$ to the centers of their respective clusters. Repeat until the $c_i$ do not move between iterations.
 
 In the unweighted problem, the centers of the clusters can be computed by taking the mean of each component of  the points in the cluster. In the weighted problem, this method does not work, since the center of the cluster has become a weighted mean of the points. Instead, in the center adjusting step, we find the new location for a center $c_j \in \Gamma$ by solving the optimization problem
 
@@ -113,7 +113,7 @@ $$\Bigg[ \sum_{\{i: p_i \in \Gamma\}} w(\xi_i) \Big(\frac{p_{i,x} - c_{j,x}}{d(p
 
 We randomly assign starting centers, though other initialization methods may be used. This suffices to find a solution for an arbitrary number of distribution centers.
 
-To find a solution such that the cost function is below a given threshold and the number of centers is minimized, run the algorithm for $1, 2, ...$ centers until the cost function falls below the threshold. Lloyd's algorithm is not guaranteed to produce a global minimum, so to more fully explore the space, we run the algorithm several times, stochastically varying the initialization points, for each choice of $k$.
+To find a solution such that the cost function is below a given threshold and the number of centers is minimized, run the algorithm for $1, 2, ..., k, ...$ centers until the cost function falls below the threshold. Lloyd's algorithm is not guaranteed to produce a global minimum, so to more fully explore the space, we run the algorithm several times, stochastically varying the initialization points, for each choice of $k$.
 
 \begin{algorithm}
   \caption{Lloyd's Algorithm with Weighting}
@@ -238,7 +238,7 @@ The results of clustering under the influence of different weight functions sugg
 \subsection{Conclusions}
 As expected, placing distribution centers near areas with high population density is optimal. This is hardly surprising, though it serves as a good sanity check for our algorithm. More centers leads to a lower cost function, though the decrease slows as the number of centers increases. The marginal utility of adding extra centers decreases rapidly, as is readily apparent with as few as 10 centers.
 
-The choice of weight function, out of the ones we tested, appears to have little impact on center placement. More extreme choices, such as$w(\xi)=2^{\xi}$, could drastically alter center placement, and weight functions that \textit{penalize} large populations, such as $w(\xi)=\frac{1}{\xi}$, could result in centers placed as far from cities as possible, though examining their effects is not the focus of this paper.
+The choice of weight function, out of the ones we tested, appears to have little impact on center placement. More extreme choices, such as $w(\xi)=2^{\xi}$, could drastically alter center placement, and weight functions that \textit{penalize} large populations, such as $w(\xi)=\frac{1}{\xi}$, could result in centers placed as far from cities as possible, though examining their effects is not the focus of this paper.
 
 Population filters below a certain threshold also had little effect on center placement, though more extreme filters moved centers even closer to major cities. This is promising, since as mentioned above, as many as 30\% of points could be removed with little effect on the results, but a significant improvement in speed. Since we have observed our weighted Lloyd's algorithm to be rather slow, this could be a useful tactic when analyzing large datasets.
  
